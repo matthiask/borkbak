@@ -40,15 +40,14 @@ def borkbak():
     if args:
         parser.error('Don\'t try argu(ment)ing with me')
 
-    backups = get_backups()
-
+    # keys which have been used (generated using commit timestamps)
     occupied = set()
+    # trees which should be preserved and strung using newly created commits
+    keep = []
 
     now = datetime.now()
 
-    keep = []
-
-    for tree_id, timestamp, original_timestamp in backups:
+    for tree_id, timestamp, original_timestamp in get_backups():
         days = (now - timestamp).days
 
         if days > 100:
@@ -62,20 +61,20 @@ def borkbak():
             key = timestamp.strftime('daily-%Y-%m-%d')
         else:
             # keep all newer snapshots
-            key = unicode(timestamp)
             key = timestamp.strftime('original-%Y-%m-%d-%H-%M')
 
         if key in occupied:
             continue
-
         occupied.add(key)
-        keep.append((tree_id, timestamp, original_timestamp, key))
 
-    commit_id = None
-    items = len(keep)
+        keep.append((tree_id, timestamp, original_timestamp, key))
 
     if options.verbose:
         print 'Recreating history for selected backups...'
+
+    # first commit has no parent
+    commit_id = None
+    items = len(keep)
 
     for idx, (tree_id, timestamp, original_timestamp, key) in enumerate(keep):
         commit_id = create_commit(tree_id, original_timestamp, key, commit_id)
@@ -96,11 +95,12 @@ def create_commit(tree_id, timestamp, key, parent=None):
     MY_ENVIRON['GIT_COMMITTER_DATE'] = timestamp
     MY_ENVIRON['GIT_AUTHOR_DATE'] = timestamp
     p = subprocess.Popen(args, env=MY_ENVIRON, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    ret = p.communicate('Backup %s\n' % key)[0]
+    ret = p.communicate('%s\n' % key)[0]
     return ret.strip()
 
 
 def get_backups():
+    # we only need the commit's tree and timestamp from the old history
     p = subprocess.Popen(['git', 'log', '--format=%T %ct'], stdout=subprocess.PIPE)
     output = p.communicate()[0]
 
@@ -119,7 +119,6 @@ def get_backups():
             ))
 
     return reversed(ret)
-
 
 
 if __name__ == '__main__':
