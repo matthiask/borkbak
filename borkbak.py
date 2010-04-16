@@ -97,6 +97,7 @@ def borkbak():
 
         subprocess.call(['git', 'reflog', 'expire', '--all', '--expire=0', '--expire-unreachable=0'])
         subprocess.call(args)
+        subprocess.call(['git', 'prune'])
 
 
 def create_commit(tree_id, timestamp, key, parent=None):
