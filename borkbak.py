@@ -48,6 +48,7 @@ def borkbak():
         else:
             # keep all newer snapshots
             key = unicode(timestamp)
+            key = timestamp.strftime('original-%Y-%m-%d-%H-%M')
 
         if key in occupied:
             continue
