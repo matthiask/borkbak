@@ -98,6 +98,8 @@ def borkbak():
         subprocess.call(['git', 'reflog', 'expire', '--all', '--expire=0', '--expire-unreachable=0'])
         subprocess.call(args)
         subprocess.call(['git', 'prune'])
+    elif options.verbose:
+        print 'Not removing anything since you did not tell me to do so.'
 
 
 def create_commit(tree_id, timestamp, key, parent=None):
