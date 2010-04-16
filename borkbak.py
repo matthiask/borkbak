@@ -8,12 +8,13 @@ Run this inside a git repository with hourly snapshots.
 """
 
 from datetime import datetime, timedelta
+import optparse
 import os
 import re
 import subprocess
 import sys
 
-my_environ = {
+MY_ENVIRON = {
     'GIT_AUTHOR_NAME': 'borkbak',
     'GIT_AUTHOR_EMAIL': 'borkbak@feinheit.ch',
     'GIT_COMMITTER_NAME': 'borkbak',
@@ -21,10 +22,24 @@ my_environ = {
     }
 
 for key in ('PWD', 'PATH'):
-    my_environ[key] = os.environ.get(key, '')
+    MY_ENVIRON[key] = os.environ.get(key, '')
 
 
 def borkbak():
+    parser = optparse.OptionParser()
+    parser.add_option('', '--ref', dest='ref',
+        help='Set ref to create/update [default: %default]',
+        default='refs/heads/borkbak')
+    parser.add_option('-q', '--quiet', dest='verbose', action='store_false',
+        help='Do not print status messages',
+        default=True)
+    parser.add_option('', '--prune', dest='prune',
+        help='Prune unreachable objects',
+        default=False)
+    options, args = parser.parse_args()
+    if args:
+        parser.error('Don\'t try argu(ment)ing with me')
+
     backups = get_backups()
 
     occupied = set()
@@ -59,27 +74,29 @@ def borkbak():
     commit_id = None
     items = len(keep)
 
-    print 'Recreating history for selected backups...'
+    if options.verbose:
+        print 'Recreating history for selected backups...'
 
     for idx, (tree_id, timestamp, original_timestamp, key) in enumerate(keep):
         commit_id = create_commit(tree_id, original_timestamp, key, commit_id)
 
-        sys.stdout.write('\r%s/%s' % (idx+1, items))
-        sys.stdout.flush()
+        if options.verbose:
+            sys.stdout.write('\r%s/%s' % (idx+1, items))
+            sys.stdout.flush()
 
-    ref = 'refs/heads/borkbak'
-    p = subprocess.call(['git', 'update-ref', ref, commit_id])
-    print '\nUpdated ref %s.' % ref
+    p = subprocess.call(['git', 'update-ref', options.ref, commit_id])
+    if options.verbose:
+        print '\nUpdated ref %s.' % options.ref
 
 
 def create_commit(tree_id, timestamp, key, parent=None):
     args = ['git', 'commit-tree', tree_id]
     if parent:
         args.extend(['-p', parent])
-    my_environ['GIT_COMMITTER_DATE'] = timestamp
-    my_environ['GIT_AUTHOR_DATE'] = timestamp
-    p = subprocess.Popen(args, env=my_environ, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    ret = p.communicate('Backup %s' % key)[0]
+    MY_ENVIRON['GIT_COMMITTER_DATE'] = timestamp
+    MY_ENVIRON['GIT_AUTHOR_DATE'] = timestamp
+    p = subprocess.Popen(args, env=MY_ENVIRON, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    ret = p.communicate('Backup %s\n' % key)[0]
     return ret.strip()
 
 
