@@ -33,7 +33,7 @@ def borkbak():
     parser.add_option('-q', '--quiet', dest='verbose', action='store_false',
         help='Do not print status messages',
         default=True)
-    parser.add_option('', '--prune', dest='prune',
+    parser.add_option('', '--prune', dest='prune', action='store_true',
         help='Prune unreachable objects',
         default=False)
     options, args = parser.parse_args()
@@ -86,6 +86,17 @@ def borkbak():
     p = subprocess.call(['git', 'update-ref', options.ref, commit_id])
     if options.verbose:
         print '\nUpdated ref %s.' % options.ref
+
+    if options.prune:
+        args = ['git', 'gc', '--prune']
+
+        if options.verbose:
+            print 'Expiring all reflogs and collecting garbage...'
+        else:
+            args.append('--quiet')
+
+        subprocess.call(['git', 'reflog', 'expire', '--all', '--expire=0', '--expire-unreachable=0'])
+        subprocess.call(args)
 
 
 def create_commit(tree_id, timestamp, key, parent=None):
