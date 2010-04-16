@@ -50,18 +50,14 @@ def borkbak():
     for tree_id, timestamp, original_timestamp in get_backups():
         days = (now - timestamp).days
 
-        if days > 100:
-            # only keep monthly snapshots for backups older than 100 days
-            key = timestamp.strftime('monthly-%Y-%m')
-        elif days > 30:
-            # only keep weekly snapshots for backups older than 30 days
-            key = timestamp.strftime('weekly-%Y-%W')
-        elif days > 7:
-            # only keep daily snapshots for backups older than 7 days
-            key = timestamp.strftime('daily-%Y-%m-%d')
-        else:
-            # keep all newer snapshots
+        if days < 7:
             key = timestamp.strftime('original-%Y-%m-%d-%H-%M')
+        elif days < 30:
+            key = timestamp.strftime('daily-%Y-%m-%d')
+        elif days < 180:
+            key = timestamp.strftime('weekly-%Y-%W')
+        else:
+            key = timestamp.strftime('monthly-%Y-%m')
 
         if key in occupied:
             continue
