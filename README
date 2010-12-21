@@ -1,0 +1,13 @@
+=======================================
+borkbak - git backup archive compressor
+=======================================
+
+borkbak is built for backup scripts which use git to store hourly snapshots,
+but do not want to keep old versions around forever.
+
+It rebuilds git history using the following rules:
+
+* Retain every version for the last 7 days
+* Keep daily snapshots for the last 30 days
+* Keep weekly snaphosts for half a year
+* Afterwards, only store monthly snapshots
